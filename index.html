@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERROR: Dopamine Detox</title>
+<style>
+body { background-color:#000; color:#0f0; font-family: monospace; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:100vh; margin:0; padding:1rem;}
+h1 { font-size:2rem; margin-bottom:1rem;}
+button { font-size:1rem; padding:0.5rem 1rem; margin:0.5rem; cursor:pointer; background-color:#111; color:#0f0; border:1px solid #0f0; flex-shrink:0;}
+input { font-size:1rem; padding:0.3rem; margin:0.5rem; background-color:#111; color:#0f0; border:1px solid #0f0;}
+#timer { font-size:3rem; margin:1rem;}
+#ranking { margin-top:1rem; max-width:100%; overflow-x:auto;}
+#status-bar { margin-bottom:1rem;}
+.glitch { animation: glitchAnim 0.3s infinite;}
+@keyframes glitchAnim { 0% { text-shadow:2px 0 #f0f,-2px 0 #0ff;} 50% { text-shadow:-2px 0 #f0f,2px 0 #0ff;} 100% { text-shadow:2px 0 #f0f,-2px 0 #0ff;} }
+.container { width:100%; max-width:400px; display:flex; flex-direction:column; align-items:center;}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>ERROR: Dopamine Detox</h1>
+
+<div id="start-screen">
+  <p>Wprowadź swój nick, żeby dołączyć:</p>
+  <input type="text" id="nickname" placeholder="Twój nick">
+  <button id="join-btn">Dołącz</button>
+</div>
+
+<div id="main-screen" style="display:none;">
+  <div id="status-bar">
+    <p id="daily-status">Ile dziś odzyskałeś ciszy?</p>
+    <p>📱 Czas na ekranie: <span id="screen-time">5h 12min</span></p>
+    <p>🔔 Liczba powiadomień: <span id="notifications">184</span></p>
+    <p>🌀 Poziom szumu: <span id="noise-level">86%</span></p>
+  </div>
+
+  <div id="menu-screen">
+    <button id="start-60s">60 sekund ciszy</button>
+    <button id="start-challenges">Challenge offline</button>
+    <button id="end-today">Zakończ na dziś</button>
+  </div>
+
+  <div id="timer-screen" style="display:none;">
+    <div id="timer">60</div>
+    <div id="timer-message">Zostań tu i nic nie rób.</div>
+    <button id="back-from-timer">Powrót</button>
+  </div>
+
+  <div id="challenge-screen" style="display:none;">
+    <h2>Challenge'y offline</h2>
+    <button class="challenge-btn" data-points="10">1 godzina bez telefonu (+10 pkt)</button>
+    <button class="challenge-btn" data-points="15">3 godziny bez telefonu (+15 pkt)</button>
+    <button class="challenge-btn" data-points="25">12 godzin bez telefonu (+25 pkt)</button>
+    <button id="back-from-challenge">Powrót</button>
+  </div>
+
+  <div id="quotes" style="margin-top:1rem;"></div>
+
+  <div id="ranking">
+    <h2>Ranking</h2>
+    <ol id="ranking-list"></ol>
+  </div>
+</div>
+</div>
+
+<script>
+let users = [];
+let currentUser = '';
+let points = 0;
+let timer;
+let timeLeft = 60;
+let failed = false;
+let totalPercentage = 0; 
+let sessionCount = 0;
+
+const nicknameInput = document.getElementById('nickname');
+const joinBtn = document.getElementById('join-btn');
+const startScreen = document.getElementById('start-screen');
+const mainScreen = document.getElementById('main-screen');
+const menuScreen = document.getElementById('menu-screen');
+const start60sBtn = document.getElementById('start-60s');
+const startChallengesBtn = document.getElementById('start-challenges');
+const endTodayBtn = document.getElementById('end-today');
+const timerScreen = document.getElementById('timer-screen');
+const timerDisplay = document.getElementById('timer');
+const timerMessage = document.getElementById('timer-message');
+const backFromTimerBtn = document.getElementById('back-from-timer');
+const challengeScreen = document.getElementById('challenge-screen');
+const challengeBtns = document.querySelectorAll('.challenge-btn');
+const backFromChallengeBtn = document.getElementById('back-from-challenge');
+const rankingList = document.getElementById('ranking-list');
+const quotesDiv = document.getElementById('quotes');
+const noiseLevelSpan = document.getElementById('noise-level');
+
+// Dołączenie użytkownika
+joinBtn.addEventListener('click', () => {
+  const nick = nicknameInput.value.trim();
+  if(!nick) return alert("Wpisz swój nick!");
+  currentUser = nick;
+  if(!users.some(u=>u.name===nick)) users.push({name: currentUser, points: 0});
+  updateRanking();
+  startScreen.style.display = 'none';
+  mainScreen.style.display = 'flex';
+  menuScreen.style.display = 'block';
+});
+
+// 60 sekund ciszy
+start60sBtn.addEventListener('click', () => {
+  menuScreen.style.display = 'none';
+  timerScreen.style.display = 'block';
+  timeLeft = 60 + sessionCount*5; 
+  failed = false;
+  timerDisplay.textContent = timeLeft;
+  timerMessage.textContent = "Zostań tu i nic nie rób.";
+
+  timer = setInterval(() => {
+    timeLeft--;
+    timerDisplay.textContent = timeLeft;
+    if(timeLeft <= 0) {
+      clearInterval(timer);
+      sessionCount++;
+      totalPercentage += 3;
+      timerMessage.textContent = `Gratulacje! Odzyskałeś ${totalPercentage}% siebie.`;
+      addPoints(2);
+      quotesDiv.innerHTML = "<p>Z każdym dniem mniej hałasu. System odzyskuje połączenie z Tobą.</p>";
+      decreaseNoise();
+      setTimeout(()=>{timerScreen.style.display='none'; menuScreen.style.display='block';},1500);
+    }
+  },1000);
+
+  function failCheck(){
+    if(!failed){
+      clearInterval(timer);
+      timerMessage.textContent="Nie udało się. Spróbuj znowu.";
+      timerMessage.classList.add('glitch');
+      failed=true;
+      document.removeEventListener('mousemove',failCheck);
+      document.removeEventListener('touchmove',failCheck);
+      setTimeout(()=>{timerScreen.style.display='none'; menuScreen.style.display='block';},1500);
+    }
+  }
+
+  document.addEventListener('mousemove', failCheck);
+  document.addEventListener('touchmove', failCheck);
+});
+
+// Powrót z timer
+backFromTimerBtn.addEventListener('click',()=>{
+  clearInterval(timer);
+  timerScreen.style.display='none';
+  menuScreen.style.display='block';
+});
+
+// Challenge screen
+startChallengesBtn.addEventListener('click', () => {
+  menuScreen.style.display='none';
+  challengeScreen.style.display='block';
+});
+
+// Powrót z challenge
+backFromChallengeBtn.addEventListener('click',()=>{
+  challengeScreen.style.display='none';
+  menuScreen.style.display='block';
+});
+
+// Challenge buttons
+challengeBtns.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const pts=parseInt(btn.dataset.points);
+    addPoints(pts);
+    quotesDiv.innerHTML = "<p>Zniknąłeś z sieci, ale wróciłeś spokojniejszy. Twój umysł nie potrzebuje więcej dźwięku, potrzebuje przestrzeni.</p>";
+  });
+});
+
+// Zakończ na dziś
+endTodayBtn.addEventListener('click',()=>{
+  menuScreen.style.display='none';
+  quotesDiv.innerHTML="<p>Sesja zakończona na dziś. Wracaj jutro po więcej ciszy!</p>";
+});
+
+// Funkcja dodawania punktów
+function addPoints(pts){
+  points+=pts;
+  const user = users.find(u=>u.name===currentUser);
+  if(user) user.points+=pts;
+  updateRanking();
+}
+
+// Aktualizacja rankingu
+function updateRanking(){
+  rankingList.innerHTML='';
+  users.sort((a,b)=>b.points-b.points);
+  users.forEach(u=>{
+    const li=document.createElement('li');
+    li.textContent=`${u.name}: ${u.points} pkt`;
+    rankingList.appendChild(li);
+  });
+}
+
+// Zmniejszanie poziomu szumu
+function decreaseNoise(){
+  let noise = parseInt(noiseLevelSpan.textContent);
+  noise = Math.max(0, noise - Math.floor(Math.random()*10 +5));
+  noiseLevelSpan.textContent = noise + "%";
+}
+</script>
+</body>
+</html>
