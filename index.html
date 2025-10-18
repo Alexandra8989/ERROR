@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERROR: Dopamine Detox</title>
+<style>
+  body {
+    background-color: #000;
+    color: #0f0;
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  h1 { font-size: 2rem; margin-bottom: 1rem; }
+  #timer { font-size: 3rem; margin: 1rem; }
+  button { font-size: 1rem; padding: 0.5rem 1rem; margin: 1rem; cursor: pointer; background-color: #111; color: #0f0; border: 1px solid #0f0; }
+  input { font-size: 1rem; padding: 0.3rem; margin: 0.5rem; background-color: #111; color: #0f0; border: 1px solid #0f0; }
+  #ranking { margin-top: 2rem; }
+  .glitch { animation: glitchAnim 0.3s infinite; }
+  @keyframes glitchAnim {
+    0% { text-shadow: 2px 0 #f0f, -2px 0 #0ff; }
+    50% { text-shadow: -2px 0 #f0f, 2px 0 #0ff; }
+    100% { text-shadow: 2px 0 #f0f, -2px 0 #0ff; }
+  }
+</style>
+</head>
+<body>
+
+<h1>ERROR: Dopamine Detox</h1>
+
+<div id="start-screen">
+  <p>Wprowadź swój nick, żeby dołączyć:</p>
+  <input type="text" id="nickname" placeholder="Twój nick">
+  <button id="join-btn">Dołącz</button>
+</div>
+
+<div id="main-screen" style="display:none;">
+  <div id="status">
+    <p>System przeciążony. Sprawdź poziom dopaminy.</p>
+    <button id="start-button">Rozpocznij wyciszanie</button>
+  </div>
+
+  <div id="timer-screen" style="display:none;">
+    <div id="timer">60</div>
+    <div id="message">Zostań tu 60 sekund i nic nie rób.</div>
+  </div>
+
+  <div id="challenge-screen" style="display:none;">
+    <h2>Challenge'y offline</h2>
+    <button class="challenge-btn" data-points="5">1 godzina bez telefonu (+5 pkt)</button>
+    <button class="challenge-btn" data-points="10">3 godziny bez telefonu (+10 pkt)</button>
+    <button class="challenge-btn" data-points="20">12 godzin bez telefonu (+20 pkt)</button>
+  </div>
+
+  <div id="ranking">
+    <h2>Ranking</h2>
+    <ol id="ranking-list"></ol>
+  </div>
+</div>
+
+<script>
+let points = 0;
+let users = [];
+let currentUser = '';
+let timer;
+let timeLeft = 60;
+let failed = false;
+
+const nicknameInput = document.getElementById('nickname');
+const joinBtn = document.getElementById('join-btn');
+const startScreen = document.getElementById('start-screen');
+const mainScreen = document.getElementById('main-screen');
+const startButton = document.getElementById('start-button');
+const timerScreen = document.getElementById('timer-screen');
+const timerDisplay = document.getElementById('timer');
+const message = document.getElementById('message');
+const challengeBtns = document.querySelectorAll('.challenge-btn');
+const rankingList = document.getElementById('ranking-list');
+
+// Dołączanie użytkownika
+joinBtn.addEventListener('click', () => {
+  const nick = nicknameInput.value.trim();
+  if(nick === '') return alert("Wpisz swój nick!");
+  currentUser = nick;
+  users.push({name: currentUser, points: 0});
+  updateRanking();
+  startScreen.style.display = 'none';
+  mainScreen.style.display = 'flex';
+});
+
+// Start 60 sekundowego wyciszenia
+startButton.addEventListener('click', () => {
+  startButton.style.display = 'none';
+  timerScreen.style.display = 'block';
+  timeLeft = 60;
+  failed = false;
+  timerDisplay.textContent = timeLeft;
+  message.textContent = "Zostań tu 60 sekund i nic nie rób.";
+
+  timer = setInterval(() => {
+    timeLeft--;
+    timerDisplay.textContent = timeLeft;
+    if(timeLeft <= 0) {
+      clearInterval(timer);
+      message.textContent = "Gratulacje. Właśnie odzyskałeś 1% siebie.";
+      addPoints(2); // nagroda za 60s ciszy
+      showChallengeScreen();
+    }
+  }, 1000);
+
+  document.addEventListener('mousemove', failCheck);
+  document.addEventListener('touchmove', failCheck);
+});
+
+function failCheck() {
+  if(!failed){
+    clearInterval(timer);
+    message.textContent = "Nie udało się. Spróbuj znowu.";
+    message.classList.add('glitch');
+    failed = true;
+    document.removeEventListener('mousemove', failCheck);
+    document.removeEventListener('touchmove', failCheck);
+  }
+}
+
+function showChallengeScreen() {
+  document.getElementById('challenge-screen').style.display = 'block';
+}
+
+// Punkty za challenge'e
+challengeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pts = parseInt(btn.dataset.points);
+    addPoints(pts);
+    btn.disabled = true;
+  });
+});
+
+function addPoints(pts) {
+  points += pts;
+  // przypisanie punktów do aktualnego użytkownika
+  const user = users.find(u => u.name === currentUser);
+  if(user) user.points += pts;
+  updateRanking();
+}
+
+function updateRanking() {
+  // Sortuj według punktów malejąco
+  users.sort((a,b) => b.points - a.points);
+  rankingList.innerHTML = '';
+  users.forEach(u => {
+    const li = document.createElement('li');
+    li.textContent = `${u.name}: ${u.points} pkt`;
+    rankingList.appendChild(li);
+  });
+}
+</script>
+
+</body>
+</html>
