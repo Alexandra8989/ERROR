@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERROR: Dopamine Detox</title>
+<style>
+    body {
+        background-color: black;
+        color: #00FF00;
+        font-family: "Courier New", monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        overflow: hidden;
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        text-shadow: 0 0 10px #00FF00;
+        margin-bottom: 20px;
+    }
+
+    button {
+        background: black;
+        color: #00FF00;
+        border: 2px solid #00FF00;
+        padding: 15px 30px;
+        margin: 10px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    button:hover {
+        background: #00FF00;
+        color: black;
+    }
+
+    input {
+        background: black;
+        border: 2px solid #00FF00;
+        color: #00FF00;
+        font-size: 1.2rem;
+        padding: 10px;
+        text-align: center;
+    }
+
+    #timer {
+        font-size: 5rem;
+        text-shadow: 0 0 20px #00FF00;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .glitch {
+        font-size: 3rem;
+        color: #00FF00;
+        text-shadow: 2px 2px 10px #00FF00;
+        animation: glitch 0.3s infinite;
+    }
+
+    @keyframes glitch {
+        0% { text-shadow: 2px 2px #00FF00; }
+        25% { text-shadow: -2px -2px #00FF00; }
+        50% { text-shadow: 2px -2px #00FF00; }
+        75% { text-shadow: -2px 2px #00FF00; }
+        100% { text-shadow: 2px 2px #00FF00; }
+    }
+</style>
+</head>
+<body>
+
+<div id="join">
+    <h1>ERROR: System przeciążony</h1>
+    <input type="text" id="nickname" placeholder="Wpisz swój nickname">
+    <button onclick="join()">Dołącz</button>
+</div>
+
+<div id="menu" class="hidden">
+    <h1 id="welcome"></h1>
+    <button onclick="startSession(60)">60 sekund</button>
+    <button onclick="startSession(120)">2 minuty</button>
+    <button onclick="startSession(300)">5 minut</button>
+    <p>Twoje punkty: <span id="points">0</span>%</p>
+</div>
+
+<div id="session" class="hidden">
+    <div id="timer"></div>
+</div>
+
+<div id="result" class="hidden">
+    <h1 id="message" class="glitch"></h1>
+    <button onclick="backToMenu()">Powrót do menu</button>
+</div>
+
+<script>
+let nickname = "";
+let points = 0;
+let countdown;
+let timeLeft;
+let inSession = false;
+let failed = false;
+
+function join() {
+    nickname = document.getElementById("nickname").value.trim();
+    if (!nickname) { alert("Podaj nickname!"); return; }
+    document.getElementById("join").classList.add("hidden");
+    document.getElementById("menu").classList.remove("hidden");
+    document.getElementById("welcome").innerText = `Witaj, ${nickname}.`;
+}
+
+function startSession(seconds) {
+    if (inSession) return;
+    inSession = true;
+    failed = false;
+    timeLeft = seconds;
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("session").classList.remove("hidden");
+    document.getElementById("timer").innerText = timeLeft;
+
+    function detectMove() {
+        if (inSession && !failed) {
+            failed = true;
+            clearInterval(countdown);
+            showResult(false);
+            removeListeners();
+        }
+    }
+
+    function removeListeners() {
+        document.removeEventListener("mousemove", detectMove);
+        document.removeEventListener("touchstart", detectMove);
+    }
+
+    document.addEventListener("mousemove", detectMove);
+    document.addEventListener("touchstart", detectMove);
+
+    countdown = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = timeLeft;
+        if (timeLeft <= 0 && !failed) {
+            clearInterval(countdown);
+            removeListeners();
+            inSession = false;
+            showResult(true);
+        }
+    }, 1000);
+}
+
+function showResult(success) {
+    inSession = false;
+    document.getElementById("session").classList.add("hidden");
+    document.getElementById("result").classList.remove("hidden");
+    const message = document.getElementById("message");
+
+    if (success) {
+        points++;
+        message.innerText = `Gratulacje, udało Ci się odzyskać ${points}% siebie.`;
+    } else {
+        message.innerText = `ERROR: Nie udało Ci się wykonać zadania. Spróbuj ponownie.`;
+    }
+    document.getElementById("points").innerText = points;
+}
+
+function backToMenu() {
+    document.getElementById("result").classList.add("hidden");
+    document.getElementById("menu").classList.remove("hidden");
+}
+</script>
+
+</body>
+</html>
