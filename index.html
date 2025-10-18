@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERROR: Dopamine Detox</title>
+<style>
+    body {
+        margin: 0;
+        font-family: 'Arial', sans-serif;
+        background-color: #000;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        text-align: center;
+    }
+    #menu, #startScreen, #sessionScreen, #endSessionScreen {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+    }
+    button {
+        margin: 10px;
+        padding: 15px 25px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        background-color: #222;
+        color: #fff;
+        transition: background 0.3s;
+    }
+    button:hover {
+        background-color: #555;
+    }
+    #noiseBarContainer {
+        width: 80%;
+        background-color: #444;
+        margin: 15px 0;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    #noiseBar {
+        height: 25px;
+        background-color: #0f0;
+        width: 100%;
+        text-align: center;
+        line-height: 25px;
+        color: #000;
+        font-weight: bold;
+    }
+    #message {
+        margin: 20px 0;
+        font-size: 20px;
+    }
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+    <h2>Witaj!</h2>
+    <p>Ile dziś odzyskałeś ciszy?</p>
+    <input type="text" id="nicknameInput" placeholder="Wpisz swój nickname">
+    <button id="joinBtn">Dołącz</button>
+</div>
+
+<div id="menu">
+    <h2>Menu</h2>
+    <div id="noiseBarContainer">
+        <div id="noiseBar">Poziom szumu: 100%</div>
+    </div>
+    <button id="startSessionBtn">Rozpocznij 60 sekund ciszy</button>
+    <button id="endSessionBtn">Zakończ sesję</button>
+    <p>Twoje punkty: <span id="pointsDisplay">0</span></p>
+</div>
+
+<div id="sessionScreen">
+    <h2 id="timerDisplay">60</h2>
+    <div id="message"></div>
+    <button id="next60Btn" style="display:none;">Kolejne 60 sekund</button>
+    <button id="backToMenuBtn" style="display:none;">Wróć do menu</button>
+</div>
+
+<div id="endSessionScreen">
+    <h2>Sesja zakończona</h2>
+    <p>Twoje punkty: <span id="finalPoints">0</span></p>
+    <button id="returnMenuBtn">Powrót do menu</button>
+</div>
+
+<script>
+let points = 0;
+let nickname = '';
+let sessionTime = 60;
+let sessionInterval;
+let noiseLevel = 100;
+let touched = false;
+
+const startScreen = document.getElementById('startScreen');
+const menu = document.getElementById('menu');
+const sessionScreen = document.getElementById('sessionScreen');
+const endSessionScreen = document.getElementById('endSessionScreen');
+
+const nicknameInput = document.getElementById('nicknameInput');
+const joinBtn = document.getElementById('joinBtn');
+const pointsDisplay = document.getElementById('pointsDisplay');
+const finalPoints = document.getElementById('finalPoints');
+
+const startSessionBtn = document.getElementById('startSessionBtn');
+const endSessionBtn = document.getElementById('endSessionBtn');
+
+const timerDisplay = document.getElementById('timerDisplay');
+const message = document.getElementById('message');
+const next60Btn = document.getElementById('next60Btn');
+const backToMenuBtn = document.getElementById('backToMenuBtn');
+
+const returnMenuBtn = document.getElementById('returnMenuBtn');
+const noiseBar = document.getElementById('noiseBar');
+
+function showScreen(screen) {
+    startScreen.style.display = 'none';
+    menu.style.display = 'none';
+    sessionScreen.style.display = 'none';
+    endSessionScreen.style.display = 'none';
+    screen.style.display = 'flex';
+}
+
+joinBtn.addEventListener('click', () => {
+    nickname = nicknameInput.value || 'Anon';
+    showScreen(menu);
+});
+
+startSessionBtn.addEventListener('click', () => {
+    showScreen(sessionScreen);
+    start60Session();
+});
+
+endSessionBtn.addEventListener('click', () => {
+    finalPoints.textContent = points;
+    showScreen(endSessionScreen);
+});
+
+returnMenuBtn.addEventListener('click', () => {
+    showScreen(menu);
+});
+
+next60Btn.addEventListener('click', () => {
+    showScreen(sessionScreen);
+    start60Session();
+    next60Btn.style.display = 'none';
+    backToMenuBtn.style.display = 'none';
+});
+
+backToMenuBtn.addEventListener('click', () => {
+    showScreen(menu);
+    next60Btn.style.display = 'none';
+    backToMenuBtn.style.display = 'none';
+});
+
+function start60Session() {
+    let timeLeft = sessionTime;
+    touched = false;
+    timerDisplay.textContent = timeLeft;
+    message.textContent = '';
+
+    noiseLevel = 100; // reset noise
+    updateNoiseBar();
+
+    clearInterval(sessionInterval);
+    sessionInterval = setInterval(() => {
+        if (!touched) {
+            timeLeft--;
+            noiseLevel -= 100 / sessionTime;
+            if (noiseLevel < 0) noiseLevel = 0;
+            updateNoiseBar();
+            timerDisplay.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(sessionInterval);
+                points += 2;
+                pointsDisplay.textContent = points;
+                message.textContent = 'Gratulacje! Odzyskałeś 1% siebie.';
+                next60Btn.style.display = 'inline-block';
+                backToMenuBtn.style.display = 'inline-block';
+            }
+        }
+    }, 1000);
+}
+
+function updateNoiseBar() {
+    noiseBar.style.width = noiseLevel + '%';
+    noiseBar.textContent = `Poziom szumu: ${Math.round(noiseLevel)}%`;
+    if (noiseLevel > 60) noiseBar.style.backgroundColor = '#0f0';
+    else if (noiseLevel > 30) noiseBar.style.backgroundColor = '#ff0';
+    else noiseBar.style.backgroundColor = '#f00';
+}
+
+// Zatrzymanie sesji przy dotyku
+sessionScreen.addEventListener('touchstart', () => {
+    touched = true;
+    message.textContent = 'Nie udało się! Spróbuj ponownie.';
+});
+sessionScreen.addEventListener('mousedown', () => {
+    touched = true;
+    message.textContent = 'Nie udało się! Spróbuj ponownie.';
+});
+
+// Start
+showScreen(startScreen);
+</script>
+
+</body>
+</html>
