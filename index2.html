@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERROR: Dopamine Detox</title>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: black;
+        color: #00FF00;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+    }
+    h1 {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    #menu, #session, #result {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    button {
+        margin: 10px;
+        padding: 15px 30px;
+        font-size: 1.2rem;
+        background-color: black;
+        color: #00FF00;
+        border: 2px solid #00FF00;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #00FF00;
+        color: black;
+    }
+    #timer {
+        font-size: 5rem;
+        margin: 20px;
+    }
+    #noiseBarContainer {
+        width: 80%;
+        background-color: #333;
+        border: 2px solid #00FF00;
+        height: 30px;
+        margin-top: 20px;
+        position: relative;
+    }
+    #noiseBar {
+        background-color: #00FF00;
+        height: 100%;
+        width: 100%;
+        transition: width 1s linear;
+    }
+    #noiseLabel {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+
+<h1>ERROR: System przeciążony</h1>
+
+<div id="join">
+    <input type="text" id="nickname" placeholder="Wpisz swój nickname" />
+    <button onclick="joinSession()">Dołącz</button>
+</div>
+
+<div id="menu">
+    <h1 id="welcome"></h1>
+    <div id="noiseBarContainer">
+        <div id="noiseBar"></div>
+        <div id="noiseLabel">Pasek szumu: 100%</div>
+    </div>
+    <button onclick="startSession(60)">60 sekund</button>
+    <button onclick="startSession(120)">2 minuty</button>
+    <button onclick="startSession(300)">5 minut</button>
+    <button onclick="endDay()">Zakończ sesję na dziś</button>
+    <p>Twoje punkty: <span id="points">0</span></p>
+</div>
+
+<div id="session">
+    <div id="timer"></div>
+</div>
+
+<div id="result">
+    <h1 id="resultMessage"></h1>
+    <button onclick="backToMenu()">Wróć do menu</button>
+</div>
+
+<script>
+let points = 0;
+let noise = 100;
+let countdown;
+let inSession = false;
+let nickname = '';
+
+function joinSession() {
+    nickname = document.getElementById('nickname').value.trim();
+    if(!nickname) { alert('Wpisz swój nickname!'); return; }
+    document.getElementById('join').style.display = 'none';
+    document.getElementById('menu').style.display = 'flex';
+    document.getElementById('welcome').innerText = `Witaj ${nickname}!`;
+    updateNoiseBar();
+}
+
+function startSession(seconds) {
+    if(inSession) return;
+    inSession = true;
+    let timeLeft = seconds;
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('session').style.display = 'flex';
+    document.getElementById('timer').innerText = timeLeft;
+
+    function detectMove(e) {
+        clearInterval(countdown);
+        inSession = false;
+        showResult(false);
+        document.removeEventListener('mousemove', detectMove);
+        document.removeEventListener('touchstart', detectMove);
+    }
+
+    document.addEventListener('mousemove', detectMove);
+    document.addEventListener('touchstart', detectMove);
+
+    countdown = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        noise = Math.max(0, noise - 100/seconds);
+        updateNoiseBar();
+        if(timeLeft <= 0) {
+            clearInterval(countdown);
+            inSession = false;
+            document.removeEventListener('mousemove', detectMove);
+            document.removeEventListener('touchstart', detectMove);
+            points += 1; // 1% siebie za każdą udaną sesję
+            showResult(true);
+        }
+    }, 1000);
+}
+
+function updateNoiseBar() {
+    const bar = document.getElementById('noiseBar');
+    const label = document.getElementById('noiseLabel');
+    bar.style.width = noise + '%';
+    label.innerText = `Pasek szumu: ${Math.round(noise)}%`;
+}
+
+function showResult(success) {
+    document.getElementById('session').style.display = 'none';
+    document.getElementById('result').style.display = 'flex';
+    if(success) {
+        document.getElementById('resultMessage').innerText = `Gratulacje, udało Ci się odzyskać ${points}% siebie!`;
+    } else {
+        document.getElementById('resultMessage').innerText = `ERROR: Nie udało Ci się wykonać zadania. Spróbuj ponownie.`;
+    }
+    document.getElementById('points').innerText = points;
+}
+
+function backToMenu() {
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('menu').style.display = 'flex';
+}
+
+function endDay() {
+    alert(`Sesja zakończona! Twoje punkty: ${points}`);
+}
+</script>
+
+</body>
+</html>
