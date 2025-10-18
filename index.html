@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERROR: Dopamine Detox</title>
+<style>
+  body {
+    margin:0;
+    font-family: 'Courier New', monospace;
+    background: #000;
+    color: #0ff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    overflow:hidden;
+  }
+  .screen {
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+  .visible { display:flex; }
+  h1, h2, h3 { margin: 10px; }
+  .glitch {
+    color:#f0f;
+    position:relative;
+    animation: glitch 0.3s infinite;
+  }
+  @keyframes glitch {
+    0% { text-shadow: 2px 2px #0ff, -2px -2px #f0f; }
+    25% { text-shadow: -2px 2px #0ff, 2px -2px #f0f; }
+    50% { text-shadow: 2px -2px #0ff, -2px 2px #f0f; }
+    75% { text-shadow: -2px -2px #0ff, 2px 2px #f0f; }
+    100% { text-shadow: 2px 2px #0ff, -2px -2px #f0f; }
+  }
+  button {
+    margin:10px;
+    padding:10px 20px;
+    font-size:18px;
+    background:#111;
+    color:#0ff;
+    border:2px solid #0ff;
+    cursor:pointer;
+  }
+  #noise-bar {
+    width: 80%;
+    height: 20px;
+    background:#222;
+    border:2px solid #0ff;
+    margin:10px;
+    position:relative;
+  }
+  #noise-level {
+    height:100%;
+    background:#0ff;
+    width:100%;
+  }
+</style>
+</head>
+<body>
+
+<!-- Start Screen -->
+<div id="startScreen" class="screen visible">
+  <h1 class="glitch">ERROR: Przeciążenie systemu</h1>
+  <h2>Chcesz do nas dołączyć? Wpisz swój nickname:</h2>
+  <input type="text" id="nickname" placeholder="Twój nickname">
+  <button id="joinBtn">Dołącz</button>
+</div>
+
+<!-- Menu Screen -->
+<div id="menuScreen" class="screen">
+  <h2>Witaj <span id="userNameDisplay"></span>!</h2>
+  <h3>Ile dziś odzyskałeś ciszy?</h3>
+  <div id="noise-bar">Pasek szumu: <span id="noisePercent">100%</span>
+    <div id="noise-level"></div>
+  </div>
+  <button id="start60">Rozpocznij 60 sekund ciszy</button>
+  <button id="endSession">Zakończ sesję na dziś</button>
+  <h3>Twoje punkty: <span id="pointsDisplay">0</span></h3>
+</div>
+
+<!-- Session Screen -->
+<div id="sessionScreen" class="screen">
+  <h1 id="sessionMessage">Zostań tu 60 sekund i nic nie rób</h1>
+  <h2 id="countdown">60</h2>
+  <button id="sessionNext" style="display:none;">Kolejne 60 sekund</button>
+  <button id="sessionBack" style="display:none;">Wróć do menu</button>
+</div>
+
+<script>
+let points = 0;
+let nickname = '';
+let noise = 100;
+let sessionTime = 60;
+
+const startScreen = document.getElementById('startScreen');
+const menuScreen = document.getElementById('menuScreen');
+const sessionScreen = document.getElementById('sessionScreen');
+const userNameDisplay = document.getElementById('userNameDisplay');
+const pointsDisplay = document.getElementById('pointsDisplay');
+const noiseLevel = document.getElementById('noise-level');
+const noisePercent = document.getElementById('noisePercent');
+const countdownEl = document.getElementById('countdown');
+const sessionMessage = document.getElementById('sessionMessage');
+const sessionNext = document.getElementById('sessionNext');
+const sessionBack = document.getElementById('sessionBack');
+
+function showScreen(screen) {
+  startScreen.classList.remove('visible');
+  menuScreen.classList.remove('visible');
+  sessionScreen.classList.remove('visible');
+  screen.classList.add('visible');
+}
+
+// Join Button
+document.getElementById('joinBtn').addEventListener('click', ()=>{
+  nickname = document.getElementById('nickname').value || 'Anon';
+  userNameDisplay.textContent = nickname;
+  showScreen(menuScreen);
+});
+
+// Start 60s session
+document.getElementById('start60').addEventListener('click', ()=>{
+  startSession();
+});
+
+document.getElementById('endSession').addEventListener('click', ()=>{
+  alert(`Sesja zakończona. Twoje punkty: ${points}`);
+});
+
+// Session logic
+function startSession(){
+  showScreen(sessionScreen);
+  let timeLeft = sessionTime;
+  countdownEl.textContent = timeLeft;
+  sessionMessage.textContent = 'Zostań tu 60 sekund i nic nie rób';
+  sessionNext.style.display = 'none';
+  sessionBack.style.display = 'none';
+  
+  let touched = false;
+  
+  function resetSession() {
+    touched = true;
+    sessionMessage.textContent = 'ERROR: Nie udało Ci się wykonać zadania. Spróbuj ponownie.';
+    sessionMessage.classList.add('glitch');
+    countdownEl.textContent = sessionTime;
+    sessionNext.style.display = 'none';
+    sessionBack.style.display = 'inline';
+  }
+  
+  function updateNoise() {
+    if(noise > 0){ noise -= 0.5; }
+    noiseLevel.style.width = noise + '%';
+    noisePercent.textContent = Math.round(noise) + '%';
+  }
+  
+  const interval = setInterval(()=>{
+    if(touched) return;
+    timeLeft--;
+    countdownEl.textContent = timeLeft;
+    updateNoise();
+    if(timeLeft <=0){
+      clearInterval(interval);
+      points += 2;
+      pointsDisplay.textContent = points;
+      sessionMessage.textContent = 'Gratulacje! Odzyskałeś 1% siebie';
+      sessionMessage.classList.remove('glitch');
+      sessionNext.style.display = 'inline';
+      sessionBack.style.display = 'inline';
+    }
+  },1000);
+  
+  // Mouse / touch detection
+  sessionScreen.addEventListener('mousemove', resetSession, {once:true});
+  sessionScreen.addEventListener('mousedown', resetSession, {once:true});
+  sessionScreen.addEventListener('touchstart', resetSession, {once:true});
+  
+  sessionNext.addEventListener('click', ()=>{
+    sessionTime += 60; // kolejne 60 sekund
+    startSession();
+  });
+  
+  sessionBack.addEventListener('click', ()=>{
+    showScreen(menuScreen);
+  });
+}
+</script>
+
+</body>
+</html>
